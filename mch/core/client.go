@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -138,16 +139,18 @@ func (clt *Client) PostXML(url string, req map[string]string) (resp map[string]s
 	body := buffer.Bytes()
 
 	hasRetried := false
+	var errFirst error
 RETRY:
 	resp, needRetry, err := clt.postXML(url, body, reqSignType)
 	if err != nil {
 		if needRetry && !hasRetried {
 			// TODO(chanxuehong): 打印错误日志
+			errFirst = err
 			hasRetried = true
 			url = switchRequestURL(url)
 			goto RETRY
 		}
-		return nil, err
+		return nil, errors.New(errFirst.Error() + err.Error())
 	}
 	return resp, nil
 }
